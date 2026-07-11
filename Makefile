@@ -19,7 +19,6 @@ help:
 
 setup: ## one-time install + .env scaffold
 	@test -f .env || cp .env.example .env
-	@python3 -m pip install -q -r requirements.txt || echo '  (pip: use a venv; see README Python 3.12/3.13 note)'
 	@bash 00-setup/pull-images.sh
 	@python3 00-setup/verify-docker.py
 
@@ -40,7 +39,7 @@ smoke: ## health-check all 7 services
 	@curl -fsS http://localhost:8000/healthz   > /dev/null && echo "  app:           OK"
 	@curl -fsS http://localhost:9090/-/healthy > /dev/null && echo "  prometheus:    OK"
 	@curl -fsS http://localhost:9093/-/healthy > /dev/null && echo "  alertmanager:  OK"
-	@curl -fsS http://localhost:3000/api/health | grep -q '"database":"ok"' && echo "  grafana:       OK"
+	@curl -fsS http://localhost:3000/api/health | grep -Eq '"database"[[:space:]]*:[[:space:]]*"ok"' && echo "  grafana:       OK"
 	@curl -fsS http://localhost:3100/ready     > /dev/null && echo "  loki:          OK"
 	@curl -fsS http://localhost:16686/         > /dev/null && echo "  jaeger:        OK"
 	@curl -fsS http://localhost:8888/metrics   > /dev/null && echo "  otel-collector: OK"
@@ -60,9 +59,6 @@ trace: ## generate one traced request and print its trace_id
 
 drift: ## run drift detection notebook (cli mode)
 	cd 04-drift-detection && python3 scripts/drift_detect.py
-
-agentops: ## (bonus B3) instrument a mock agent: OTel spans + agent SLIs (deck §14/§19)
-	python3 BONUS-agentops/agent_run.py
 
 demo: ## end-to-end demo (load -> alert -> trace -> drift)
 	$(MAKE) load
